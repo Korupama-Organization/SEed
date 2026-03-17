@@ -9,6 +9,38 @@ export const courseApi = axios.create({
   },
 });
 
+function getStoredAccessToken() {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const candidateKeys = ['access_token', 'token', 'authToken'];
+
+  for (const key of candidateKeys) {
+    const localValue = window.localStorage.getItem(key);
+    if (localValue) {
+      return localValue;
+    }
+
+    const sessionValue = window.sessionStorage.getItem(key);
+    if (sessionValue) {
+      return sessionValue;
+    }
+  }
+
+  return null;
+}
+
+courseApi.interceptors.request.use((config) => {
+  const token = getStoredAccessToken();
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return config;
+});
+
 export type UploadUrlResponse = {
   uploadUrl: string;
   fileUrl: string;
@@ -70,6 +102,16 @@ export type SaveScormCoursePayload = {
     }>;
   }>;
 };
+
+export type SaveCourseMetadataPayload = Pick<
+  SaveScormCoursePayload,
+  'courseId' | 'courseInfo' | 'settings' | 'metadata'
+>;
+
+export async function saveCourseMetadata(payload: SaveCourseMetadataPayload) {
+  const response = await courseApi.post('/api/courses/metadata', payload);
+  return response.data;
+}
 
 export async function saveScormCourse(payload: SaveScormCoursePayload) {
   const response = await courseApi.post('/api/courses/scorm-drafts', payload);

@@ -1,8 +1,7 @@
 import axios from 'axios';
-import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
-import { requestUploadUrl, saveScormCourse } from './courseApi';
-
-const DRAFT_KEY = 'teacher-scorm-draft-v2';
+import { useRef, useState, type ChangeEvent, type ReactNode } from 'react';
+import { toast } from 'sonner';
+import { requestUploadUrl, saveCourseMetadata, saveScormCourse } from './courseApi';
 const fieldClassName =
   'w-full rounded-xl border border-[#D8DEE9] bg-white px-4 py-3 text-sm text-[#2E3440] outline-none transition focus:border-[#88C0D0] focus:ring-4 focus:ring-[#88C0D0]/20 placeholder:text-[#94A3B8]';
 const textAreaClassName = `${fieldClassName} min-h-28 resize-y`;
@@ -77,6 +76,8 @@ type Draft = {
 
 type Notice = { tone: 'info' | 'success' | 'warning'; title: string; message: string };
 
+const sectionOrder: Section[] = ['course-info', 'chapters', 'settings', 'metadata', 'preview'];
+
 const uploadTiles: UploadTile[] = [
   { id: 'video', title: 'Upload Video', subtitle: 'Lecture recording, walkthroughs, or instructor intro', accept: 'video/*' },
   { id: 'slides', title: 'Upload Slides', subtitle: 'Decks for guided learning and structured delivery', accept: '.ppt,.pptx,.pdf,.key' },
@@ -107,8 +108,8 @@ const createQuestion = (): Question => {
     id: createId('question'),
     prompt: '',
     options: [
-      { id: a, text: 'Option A' },
-      { id: b, text: 'Option B' },
+      { id: a, text: '' },
+      { id: b, text: '' },
     ],
     correctOptionId: a,
     explanation: '',
@@ -128,72 +129,28 @@ const createAssetFromFile = (file: File): Asset => ({
 const createChapter = (order: number): Chapter => ({
   id: createId('chapter'),
   order,
-  title: order === 1 ? 'Introduction to the Course' : '',
+  title: '',
   description: '',
   durationMinutes: 15,
   content: { video: [], slides: [], pdf: [], images: [] },
   questions: [],
 });
 
-const createInitialDraft = (): Draft => {
-  const chapterOne = createChapter(1);
-  chapterOne.description = 'Welcome learners and explain what they should expect from the course.';
-  chapterOne.content.video = [{
-    id: createId('asset'),
-    name: 'intro-video.mp4',
-    size: 48_000_000,
-    type: 'video/mp4',
-    uploadedAt: new Date().toISOString(),
-    fileUrl: 'https://demo-bucket.s3.filebase.com/courses/demo-course/intro-video.mp4',
-    uploadStatus: 'uploaded',
-    uploadProgress: 100,
-  }];
-  chapterOne.content.slides = [{
-    id: createId('asset'),
-    name: 'overview-slides.pdf',
-    size: 3_500_000,
-    type: 'application/pdf',
-    uploadedAt: new Date().toISOString(),
-    fileUrl: 'https://demo-bucket.s3.filebase.com/courses/demo-course/overview-slides.pdf',
-    uploadStatus: 'uploaded',
-    uploadProgress: 100,
-  }];
-  chapterOne.questions = [createQuestion()];
-  chapterOne.questions[0].prompt = 'What should learners understand after the introduction?';
-  chapterOne.questions[0].options[0].text = 'The overall course structure and goals';
-  chapterOne.questions[0].options[1].text = 'Only the final exam answers';
-
-  const chapterTwo = createChapter(2);
-  chapterTwo.title = 'Core Concepts';
-  chapterTwo.description = 'Break down the essential concepts and supporting materials.';
-  chapterTwo.durationMinutes = 30;
-  chapterTwo.content.pdf = [{
-    id: createId('asset'),
-    name: 'concept-notes.pdf',
-    size: 820_000,
-    type: 'application/pdf',
-    uploadedAt: new Date().toISOString(),
-    fileUrl: 'https://demo-bucket.s3.filebase.com/courses/demo-course/concept-notes.pdf',
-    uploadStatus: 'uploaded',
-    uploadProgress: 100,
-  }];
-
-  return {
-    courseInfo: {
-      title: 'Data Analysis Foundations',
-      subtitle: 'A practical introduction to modern analysis workflows',
-      description: 'Guide students through the building blocks of data analysis with lectures, slides, activities, and assessments.',
-      category: 'Data & Analytics',
-      level: 'Beginner',
-      language: 'English',
-      estimatedHours: '4',
-    },
-    settings: { navigationMode: 'linear', passScore: 80, allowRetakes: true, trackTimeSpent: true },
-    metadata: { identifier: 'course-data-analysis-foundations', version: '1.0.0', author: 'Teacher Team', keywords: 'data analysis, fundamentals', notes: 'Frontend-first draft mode.' },
-    chapters: [chapterOne, chapterTwo],
-    updatedAt: null,
-  };
-};
+const createInitialDraft = (): Draft => ({
+  courseInfo: {
+    title: '',
+    subtitle: '',
+    description: '',
+    category: '',
+    level: 'Beginner',
+    language: '',
+    estimatedHours: '',
+  },
+  settings: { navigationMode: 'linear', passScore: 80, allowRetakes: true, trackTimeSpent: true },
+  metadata: { identifier: '', version: '', author: '', keywords: '', notes: '' },
+  chapters: [createChapter(1)],
+  updatedAt: null,
+});
 
 const normalizeAsset = (asset: Asset): Asset => ({
   ...asset,
@@ -244,32 +201,18 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 export default function TeacherScormPage() {
   const initialDraft = normalizeDraft(createInitialDraft());
   const [draft, setDraft] = useState<Draft>(initialDraft);
-  const [activeSection, setActiveSection] = useState<Section>('chapters');
+  const [activeSection, setActiveSection] = useState<Section>('course-info');
   const [activeChapterId, setActiveChapterId] = useState(initialDraft.chapters[0].id);
-  const [notice, setNotice] = useState<Notice | null>({ tone: 'info', title: 'Frontend draft mode', message: 'This page now behaves like a working SCORM builder on the frontend with local persistence and mock generation.' });
+  const [notice, setNotice] = useState<Notice | null>(null);
   const [isDirty, setIsDirty] = useState(false);
+  const [savedMetadataAt, setSavedMetadataAt] = useState<string | null>(null);
+  const [isSavingMetadata, setIsSavingMetadata] = useState(false);
   const [savedCourseAt, setSavedCourseAt] = useState<string | null>(null);
   const [isSavingCourse, setIsSavingCourse] = useState(false);
   const [uploadSummary, setUploadSummary] = useState<{ total: number; completed: number } | null>(null);
   const fileInputRefs = useRef<Record<ContentType, HTMLInputElement | null>>({ video: null, slides: null, pdf: null, images: null });
   const pendingFilesRef = useRef<Record<string, File>>({});
   const draftRef = useRef<Draft>(initialDraft);
-
-  useEffect(() => {
-    const saved = localStorage.getItem(DRAFT_KEY);
-    if (!saved) return;
-    try {
-      const parsed = normalizeDraft(JSON.parse(saved) as Draft);
-      if (parsed.chapters?.length) {
-        setDraft(parsed);
-        draftRef.current = parsed;
-        setActiveChapterId(parsed.chapters[0].id);
-        setNotice({ tone: 'info', title: 'Draft restored', message: 'A saved draft was loaded from local storage.' });
-      }
-    } catch {
-      setNotice({ tone: 'warning', title: 'Saved draft could not be restored', message: 'A fresh draft was loaded because local storage contained invalid data.' });
-    }
-  }, []);
 
   const updateDraft = (updater: (current: Draft) => Draft) => {
     setDraft((current) => {
@@ -288,6 +231,19 @@ export default function TeacherScormPage() {
     { label: 'SCORM metadata', description: 'Provide identifier, version, and author.', complete: Boolean(draft.metadata.identifier.trim() && draft.metadata.version.trim() && draft.metadata.author.trim()), targetSection: 'metadata' as Section },
   ];
   const completedSections = validations.filter((item) => item.complete).length;
+  const isCourseInfoReady = validations[0].complete;
+
+  const goToSection = (section: Section) => {
+    if (section === 'chapters' && !isCourseInfoReady) {
+      setActiveSection('course-info');
+      toast.warning('Complete course info first', {
+        description: 'Set the course title, category, and description before editing chapters.',
+      });
+      return;
+    }
+
+    setActiveSection(section);
+  };
 
   const updateChapter = (chapterId: string, updater: (chapter: Chapter) => Chapter) => {
     updateDraft((current) => ({ ...current, chapters: current.chapters.map((chapter) => chapter.id === chapterId ? updater(chapter) : chapter) }));
@@ -325,6 +281,34 @@ export default function TeacherScormPage() {
   const buildCourseId = (currentDraft: Draft) =>
     currentDraft.metadata.identifier.trim() || slugify(currentDraft.courseInfo.title || 'untitled-course');
 
+  const buildMetadataPayload = (currentDraft: Draft) => {
+    const courseId = buildCourseId(currentDraft);
+
+    return {
+      courseId,
+      courseInfo: currentDraft.courseInfo,
+      settings: currentDraft.settings,
+      metadata: {
+        ...currentDraft.metadata,
+        identifier: courseId,
+      },
+    };
+  };
+
+  const syncDraftIdentifier = (identifier: string) => {
+    setDraft((current) => {
+      const nextDraft = {
+        ...current,
+        metadata: {
+          ...current.metadata,
+          identifier,
+        },
+      };
+      draftRef.current = nextDraft;
+      return nextDraft;
+    });
+  };
+
   const addChapter = () => {
     const chapter = createChapter(draft.chapters.length + 1);
     updateDraft((current) => ({ ...current, chapters: [...current.chapters, chapter] }));
@@ -332,10 +316,53 @@ export default function TeacherScormPage() {
     setActiveSection('chapters');
   };
 
-  const saveDraft = () => {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-    setIsDirty(false);
-    setNotice({ tone: 'success', title: 'Draft saved locally', message: 'The SCORM draft is saved in local storage so you can continue before backend integration.' });
+  const saveDraft = async () => {
+    const currentDraft = draftRef.current;
+    const title = currentDraft.courseInfo.title.trim();
+    const version = currentDraft.metadata.version.trim();
+    const author = currentDraft.metadata.author.trim();
+
+    if (!title) {
+      setActiveSection('course-info');
+      setNotice({ tone: 'warning', title: 'Save blocked', message: 'Add a course title before saving draft.' });
+      return;
+    }
+
+    if (!version || !author) {
+      setActiveSection('metadata');
+      setNotice({ tone: 'warning', title: 'Save blocked', message: 'Version and author are required before saving draft.' });
+      return;
+    }
+
+    const payload = buildMetadataPayload(currentDraft);
+
+    try {
+      setIsSavingMetadata(true);
+      const response = await saveCourseMetadata(payload);
+      syncDraftIdentifier(payload.courseId);
+      setSavedMetadataAt(new Date().toISOString());
+      setIsDirty(false);
+      setNotice({
+        tone: 'success',
+        title: 'Metadata saved successfully',
+        message: response.message || 'Course metadata was saved to MongoDB.',
+      });
+    } catch (error) {
+      const message =
+        axios.isAxiosError(error)
+          ? error.response?.data?.error || error.message
+          : error instanceof Error
+            ? error.message
+            : 'Saving metadata failed. Please try again.';
+
+      setNotice({
+        tone: 'warning',
+        title: 'Metadata save failed',
+        message,
+      });
+    } finally {
+      setIsSavingMetadata(false);
+    }
   };
 
   const saveCourse = async () => {
@@ -347,7 +374,8 @@ export default function TeacherScormPage() {
     }
 
     const currentDraft = draftRef.current;
-    const courseId = buildCourseId(currentDraft);
+    const metadataPayload = buildMetadataPayload(currentDraft);
+    const courseId = metadataPayload.courseId;
     const assetsToUpload = currentDraft.chapters.flatMap((chapter) =>
       (Object.entries(chapter.content) as Array<[ContentType, Asset[]]>).flatMap(([contentType, assets]) =>
         assets
@@ -363,6 +391,9 @@ export default function TeacherScormPage() {
 
     try {
       setIsSavingCourse(true);
+      syncDraftIdentifier(courseId);
+      await saveCourseMetadata(metadataPayload);
+      setSavedMetadataAt(new Date().toISOString());
       setUploadSummary({
         total: assetsToUpload.length,
         completed: 0,
@@ -373,7 +404,7 @@ export default function TeacherScormPage() {
         message:
           assetsToUpload.length > 0
             ? 'Uploading selected files directly to Filebase. Please keep this page open.'
-            : 'No new files need uploading. Saving course data to the backend now.',
+            : 'No new files need uploading. Saving course data to MongoDB now.',
       });
 
       let completedUploads = 0;
@@ -439,10 +470,7 @@ export default function TeacherScormPage() {
         courseId,
         courseInfo: draftAfterUploads.courseInfo,
         settings: draftAfterUploads.settings,
-        metadata: {
-          ...draftAfterUploads.metadata,
-          identifier: courseId,
-        },
+        metadata: metadataPayload.metadata,
         chapters: draftAfterUploads.chapters.map((chapter) => ({
           order: chapter.order,
           title: chapter.title,
@@ -455,9 +483,9 @@ export default function TeacherScormPage() {
                 fileName: asset.name,
                 fileType: asset.type,
                 fileSize: asset.size,
-                fileUrl: asset.fileUrl || '',
+                fileUrl: asset.fileUrl?.trim() || '',
                 uploadedAt: asset.uploadedAt,
-              })),
+              })).filter((asset) => Boolean(asset.fileUrl)),
           ),
           questions: chapter.questions.map((question) => ({
             prompt: question.prompt,
@@ -474,15 +502,15 @@ export default function TeacherScormPage() {
       setDraft(freshDraft);
       draftRef.current = freshDraft;
       pendingFilesRef.current = {};
-      localStorage.removeItem(DRAFT_KEY);
       setActiveChapterId(freshDraft.chapters[0].id);
       setActiveSection('chapters');
+      setSavedMetadataAt(null);
       setSavedCourseAt(new Date().toISOString());
       setIsDirty(false);
       setNotice({
         tone: 'success',
         title: 'Course saved successfully',
-        message: response.message || 'All files were uploaded to Filebase and the course was saved to studuy-api.',
+        message: response.message || 'All files were uploaded to Filebase and the course was saved to MongoDB.',
       });
       setUploadSummary(null);
     } catch (error) {
@@ -618,15 +646,15 @@ export default function TeacherScormPage() {
               Create SCORM Course
             </p>
             <p className="text-sm text-[#4C566A]">
-              Fully functional frontend authoring flow before backend packaging is connected
+              Upload course assets to Filebase and save SCORM course data through the API
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <button type="button" disabled={isSavingCourse} onClick={saveDraft} className="rounded-xl border border-[#D8DEE9] bg-[#F8FAFC] px-4 py-2 text-sm font-medium text-[#2E3440] disabled:cursor-not-allowed disabled:opacity-60">
-              Save Draft
+            <button type="button" disabled={isSavingMetadata || isSavingCourse} onClick={saveDraft} className="rounded-xl border border-[#D8DEE9] bg-[#F8FAFC] px-4 py-2 text-sm font-medium text-[#2E3440] disabled:cursor-not-allowed disabled:opacity-60">
+              {isSavingMetadata ? 'Saving...' : 'Save Draft'}
             </button>
-            <button type="button" disabled={isSavingCourse} onClick={saveCourse} className="rounded-xl bg-[#88C0D0] px-4 py-2 text-sm font-semibold text-[#1F2937] disabled:cursor-not-allowed disabled:opacity-60">
+            <button type="button" disabled={isSavingMetadata || isSavingCourse} onClick={saveCourse} className="rounded-xl bg-[#88C0D0] px-4 py-2 text-sm font-semibold text-[#1F2937] disabled:cursor-not-allowed disabled:opacity-60">
               {isSavingCourse ? 'Uploading...' : 'Save Course'}
             </button>
           </div>
@@ -636,14 +664,19 @@ export default function TeacherScormPage() {
       <main className="mx-auto grid max-w-[1280px] gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8">
         <aside className="space-y-5 self-start rounded-[1.25rem] border border-[#D8DEE9] bg-white p-4 shadow-[0_18px_50px_rgba(94,129,172,0.08)]">
           <nav className="space-y-2">
-            {(Object.keys(sectionLabels) as Section[]).map((section) => (
+            {sectionOrder.map((section) => (
               <button
                 key={section}
                 type="button"
-                onClick={() => setActiveSection(section)}
+                onClick={() => goToSection(section)}
                 className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium transition ${
-                  activeSection === section ? 'bg-[#5E81AC] text-white' : 'text-[#2E3440] hover:bg-[#F4F7FB]'
+                  activeSection === section
+                    ? 'bg-[#5E81AC] text-white'
+                    : section === 'chapters' && !isCourseInfoReady
+                      ? 'cursor-not-allowed text-[#94A3B8]'
+                      : 'text-[#2E3440] hover:bg-[#F4F7FB]'
                 }`}
+                aria-disabled={section === 'chapters' && !isCourseInfoReady}
               >
                 {sectionLabels[section]}
               </button>
@@ -663,7 +696,7 @@ export default function TeacherScormPage() {
           <div className="rounded-2xl border border-[#D8DEE9] bg-[#FBFCFE] p-4">
             <h3 className="text-sm font-semibold text-[#2E3440]">Draft Health</h3>
             <div className="mt-3 space-y-2 text-sm text-[#4C566A]">
-              <div className="flex items-center justify-between"><span>Status</span><span className={`font-semibold ${isDirty ? 'text-[#9A6700]' : 'text-[#008236]'}`}>{isDirty ? 'Unsaved changes' : 'Saved locally'}</span></div>
+              <div className="flex items-center justify-between"><span>Status</span><span className={`font-semibold ${isDirty ? 'text-[#9A6700]' : savedMetadataAt ? 'text-[#008236]' : 'text-[#4C566A]'}`}>{isDirty ? 'Unsaved changes' : savedMetadataAt ? 'Saved to MongoDB' : 'Not saved yet'}</span></div>
               <div className="flex items-center justify-between"><span>Assets</span><span className="font-semibold text-[#2E3440]">{draft.chapters.reduce((total, chapter) => total + assetCount(chapter), 0)}</span></div>
               <div className="flex items-center justify-between"><span>Questions</span><span className="font-semibold text-[#2E3440]">{draft.chapters.reduce((total, chapter) => total + chapter.questions.length, 0)}</span></div>
               <div className="flex items-center justify-between"><span>Last Update</span><span className="font-semibold text-[#2E3440]">{formatTimestamp(draft.updatedAt)}</span></div>
@@ -838,7 +871,7 @@ export default function TeacherScormPage() {
                   </div>
 
                   <div className="mt-10 rounded-[1.35rem] border border-[#D8DEE9] p-4 sm:p-5">
-                    <CardHeader title="Quiz / Assessment" description="Build local quiz questions and correct answers for the active chapter." action={<button type="button" onClick={addQuestion} className="rounded-xl bg-[#5E81AC] px-4 py-2 text-sm font-semibold text-white">Add Question</button>} />
+                    <CardHeader title="Quiz / Assessment" description="Build quiz questions and correct answers for the active chapter." action={<button type="button" onClick={addQuestion} className="rounded-xl bg-[#5E81AC] px-4 py-2 text-sm font-semibold text-white">Add Question</button>} />
                     {activeChapter.questions.length > 0 ? (
                       <div className="mt-5 space-y-4">
                         {activeChapter.questions.map((question, questionIndex) => (
@@ -874,7 +907,7 @@ export default function TeacherScormPage() {
                       </div>
                     ) : (
                       <div className="mt-5 rounded-2xl border-2 border-dashed border-[#D6DFEA] bg-[#FBFCFE] px-6 py-10 text-center">
-                        <p className="text-sm text-[#4C566A]">No questions yet. Add your first question to make the frontend flow feel complete.</p>
+                        <p className="text-sm text-[#4C566A]">No questions yet. Add your first question for this chapter.</p>
                         <button type="button" onClick={addQuestion} className="mt-5 rounded-xl border border-[#D8DEE9] bg-white px-4 py-2 text-sm font-medium text-[#2E3440]">Add First Question</button>
                       </div>
                     )}
@@ -920,7 +953,7 @@ export default function TeacherScormPage() {
 
           {activeSection === 'metadata' ? (
             <section className="rounded-[1.35rem] border border-[#D8DEE9] bg-white p-5 shadow-[0_18px_50px_rgba(94,129,172,0.08)] sm:p-6">
-              <CardHeader title="SCORM Metadata" description="Capture export identifiers and authoring notes for the eventual packaging service." />
+              <CardHeader title="SCORM Metadata" description="Capture export identifiers and authoring notes for the course package." />
               <div className="mt-6 grid gap-4 lg:grid-cols-3">
                 <Field label="Identifier"><input className={fieldClassName} value={draft.metadata.identifier} onChange={(event) => updateDraft((current) => ({ ...current, metadata: { ...current.metadata, identifier: event.target.value } }))} /></Field>
                 <Field label="Version"><input className={fieldClassName} value={draft.metadata.version} onChange={(event) => updateDraft((current) => ({ ...current, metadata: { ...current.metadata, version: event.target.value } }))} /></Field>
@@ -934,7 +967,7 @@ export default function TeacherScormPage() {
           {activeSection === 'preview' ? (
             <section className="space-y-6">
               <div className="rounded-[1.35rem] border border-[#D8DEE9] bg-white p-5 shadow-[0_18px_50px_rgba(94,129,172,0.08)] sm:p-6">
-                <CardHeader title="Preview and Readiness" description="Review the local draft, run pre-upload checks, upload files directly to Filebase, and then save course data to studuy-api." action={<button type="button" disabled={isSavingCourse} onClick={saveCourse} className="rounded-xl bg-[#88C0D0] px-4 py-2 text-sm font-semibold text-[#1F2937] disabled:cursor-not-allowed disabled:opacity-60">{isSavingCourse ? 'Uploading...' : 'Save Course'}</button>} />
+                <CardHeader title="Preview and Readiness" description="Review the course, run pre-upload checks, upload files directly to Filebase, and then save course data to MongoDB." action={<button type="button" disabled={isSavingMetadata || isSavingCourse} onClick={saveCourse} className="rounded-xl bg-[#88C0D0] px-4 py-2 text-sm font-semibold text-[#1F2937] disabled:cursor-not-allowed disabled:opacity-60">{isSavingCourse ? 'Uploading...' : 'Save Course'}</button>} />
                 <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                   <div className="rounded-2xl border border-[#D8DEE9] bg-[#F8FAFC] p-4"><p className="text-sm text-[#4C566A]">Chapters</p><p className="mt-2 text-3xl font-semibold text-[#2E3440]">{draft.chapters.length}</p></div>
                   <div className="rounded-2xl border border-[#D8DEE9] bg-[#F8FAFC] p-4"><p className="text-sm text-[#4C566A]">Assets</p><p className="mt-2 text-3xl font-semibold text-[#2E3440]">{draft.chapters.reduce((total, chapter) => total + assetCount(chapter), 0)}</p></div>
@@ -945,7 +978,7 @@ export default function TeacherScormPage() {
                   <h3 className="text-sm font-semibold text-[#2E3440]">Readiness Checklist</h3>
                   <div className="mt-4 space-y-3">
                     {validations.map((item) => (
-                      <button key={item.label} type="button" onClick={() => setActiveSection(item.targetSection)} className={`flex w-full items-start justify-between gap-4 rounded-xl border px-4 py-3 text-left ${item.complete ? 'border-[#C6E7D2] bg-[#F0FDF4]' : 'border-[#F3D7A6] bg-[#FFF9E8]'}`}>
+                      <button key={item.label} type="button" onClick={() => goToSection(item.targetSection)} className={`flex w-full items-start justify-between gap-4 rounded-xl border px-4 py-3 text-left ${item.complete ? 'border-[#C6E7D2] bg-[#F0FDF4]' : 'border-[#F3D7A6] bg-[#FFF9E8]'}`}>
                         <div><p className="text-sm font-semibold text-[#2E3440]">{item.label}</p><p className="mt-1 text-sm text-[#4C566A]">{item.description}</p></div>
                         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${item.complete ? 'bg-[#DCFCE7] text-[#008236]' : 'bg-[#FEF3C7] text-[#9A6700]'}`}>{item.complete ? 'Ready' : 'Needs work'}</span>
                       </button>
@@ -955,7 +988,7 @@ export default function TeacherScormPage() {
               </div>
 
               <div className="rounded-[1.35rem] border border-[#D8DEE9] bg-white p-5 shadow-[0_18px_50px_rgba(94,129,172,0.08)] sm:p-6">
-                <CardHeader title="Course Preview" description="A learner-facing summary of the authored draft before backend packaging." />
+                <CardHeader title="Course Preview" description="A learner-facing summary of the authored course before publishing." />
                 <div className="mt-6 rounded-3xl bg-[linear-gradient(135deg,#5E81AC_0%,#88C0D0_100%)] p-6 text-white">
                   <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white/80">{draft.courseInfo.category || 'Course Category'}</p>
                   <h3 className="mt-3 text-3xl font-semibold">{draft.courseInfo.title || 'Untitled Course'}</h3>
@@ -982,7 +1015,7 @@ export default function TeacherScormPage() {
                     </div>
                   ))}
                 </div>
-                {savedCourseAt ? <div className="mt-6 rounded-2xl border border-[#B7E1EC] bg-[#EDF9FC] p-4"><p className="text-sm font-semibold text-[#2E3440]">Last Saved Course</p><p className="mt-1 text-sm text-[#4C566A]">{new Date(savedCourseAt).toLocaleString()}</p><p className="mt-2 text-xs text-[#4C566A]">Files were uploaded directly to Filebase first, then the final course payload was saved to studuy-api.</p></div> : null}
+                {savedCourseAt ? <div className="mt-6 rounded-2xl border border-[#B7E1EC] bg-[#EDF9FC] p-4"><p className="text-sm font-semibold text-[#2E3440]">Last Saved Course</p><p className="mt-1 text-sm text-[#4C566A]">{new Date(savedCourseAt).toLocaleString()}</p><p className="mt-2 text-xs text-[#4C566A]">Files were uploaded to Filebase and the final course payload was saved to MongoDB.</p></div> : null}
               </div>
             </section>
           ) : null}
