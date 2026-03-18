@@ -37,7 +37,7 @@ const LandingPage: React.FC = () => {
                         <div className="hidden md:flex items-center gap-8">
                             <a className="font-medium hover:text-primary transition-colors" href="#">Courses</a>
                             <a className="font-medium hover:text-primary transition-colors" href="#">Mentors</a>
-                            <a className="font-medium hover:text-primary transition-colors" href="#">Enterprise</a>
+                            <a className="font-medium hover:text-primary transition-colors" href="/wallet/topup">Wallet</a>
                         </div>
                         <div className="flex items-center gap-4">
                             <button
@@ -50,7 +50,7 @@ const LandingPage: React.FC = () => {
                             </button>
                             <div className="hidden sm:flex items-center gap-2">
                                 <a className="px-4 py-2 font-semibold text-slate-700 dark:text-slate-300 hover:text-primary dark:hover:text-white" href="#">Sign In</a>
-                                <a className="px-6 py-2.5 bg-primary text-white font-semibold rounded-full hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/25" href="#">Join Now</a>
+                                <a className="px-6 py-2.5 bg-primary text-white font-semibold rounded-full hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/25" href="/wallet/topup">Nạp Tiền</a>
                             </div>
                         </div>
                     </div>
@@ -80,10 +80,10 @@ const LandingPage: React.FC = () => {
                                     <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
                                     <input className="w-full pl-12 pr-4 py-4 rounded-2xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 focus:ring-primary focus:border-primary shadow-xl shadow-slate-200/50 dark:shadow-none" placeholder="What do you want to learn today?" type="text" />
                                 </div>
-                                <button className="bg-primary text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shrink-0 shadow-lg shadow-indigo-500/30">
-                                    Start Learning
-                                    <span className="material-symbols-outlined">arrow_forward</span>
-                                </button>
+                            <a className="bg-primary text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shrink-0 shadow-lg shadow-indigo-500/30" href="/wallet/topup">
+                                Start Learning
+                                <span className="material-symbols-outlined">arrow_forward</span>
+                            </a>
                             </div>
                             <div className="mt-8 flex items-center justify-center lg:justify-start gap-4">
                                 <div className="flex -space-x-2">
@@ -313,9 +313,9 @@ const LandingPage: React.FC = () => {
                             Get unlimited access to over 1,000 top-rated courses for just $19/month. Cancel anytime.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 relative z-10">
-                            <button className="px-10 py-4 bg-primary text-white font-bold rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/20">
-                                Get Started for Free
-                            </button>
+                            <a className="px-10 py-4 bg-primary text-white font-bold rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/20" href="/wallet/topup">
+                                Nạp tiền ngay
+                            </a>
                             <button className="px-10 py-4 bg-white/10 text-white font-bold rounded-2xl hover:bg-white/20 transition-all border border-white/10 backdrop-blur-sm">
                                 View Pricing
                             </button>
