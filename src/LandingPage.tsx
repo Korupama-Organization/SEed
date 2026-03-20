@@ -5,7 +5,7 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen bg-white font-sans text-[#2D2D2D]">
       
-      {/* Navigation - Đã sửa theo yêu cầu */}
+      {/* Navigation*/}
       <nav className="flex items-center justify-between px-10 py-4 border-b border-gray-100">
         <div className="flex items-center space-x-8">
           <div className="flex items-center space-x-2">
