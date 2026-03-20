@@ -335,7 +335,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Testimonials - Đã thêm 5 sao */}
+      {/* Review */}
       <section className="px-10 py-20 bg-[#F8FAFC]">
         <div className="text-center mb-16">
           <h2 className="text-3xl font-bold mb-4 text-[#2E3440]">What our students say</h2>
@@ -366,7 +366,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* CTA Section - Đã sửa mã màu và text */}
+      {/* CTA Section*/}
       <section className="px-10 py-16">
         <div 
           className="rounded-3xl p-12 text-center text-white relative overflow-hidden"
