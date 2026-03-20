@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 
 const LandingPage: React.FC = () => {
     const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -49,8 +50,8 @@ const LandingPage: React.FC = () => {
                                 <span className="material-symbols-outlined hidden dark:block">light_mode</span>
                             </button>
                             <div className="hidden sm:flex items-center gap-2">
-                                <a className="px-4 py-2 font-semibold text-slate-700 dark:text-slate-300 hover:text-primary dark:hover:text-white" href="#">Sign In</a>
-                                <a className="px-6 py-2.5 bg-primary text-white font-semibold rounded-full hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/25" href="#">Join Now</a>
+                                <Link className="px-4 py-2 font-semibold text-slate-700 dark:text-slate-300 hover:text-primary dark:hover:text-white" to="/login">Sign In</Link>
+                                <Link className="px-6 py-2.5 bg-primary text-white font-semibold rounded-full hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/25" to="/forgot-password">Quên mật khẩu</Link>
                             </div>
                         </div>
                     </div>

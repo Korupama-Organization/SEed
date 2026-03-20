@@ -1,6 +1,8 @@
 import React, { useState, FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
 const LoginPage: React.FC = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
@@ -28,6 +30,15 @@ const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-indigo-50 to-violet-100 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-8">
+        <div className="flex items-center justify-between mb-8">
+          <Link to="/" className="inline-flex items-center gap-2 text-primary font-extrabold text-lg hover:text-indigo-600">
+            <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-white">
+              <span className="material-symbols-outlined text-base">school</span>
+            </div>
+            Edu<span className="text-white bg-primary px-1 rounded-sm">Flow</span>
+          </Link>
+          <span className="text-sm text-slate-500 dark:text-slate-400">Menu</span>
+        </div>
         <div className="text-center mb-8">
           <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">Đăng nhập</h1>
           <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Chào mừng bạn quay lại EduFlow</p>
@@ -80,7 +91,7 @@ const LoginPage: React.FC = () => {
               />
               Nhớ đăng nhập
             </label>
-            <button type="button" className="font-medium text-primary hover:underline">
+            <button type="button" onClick={() => navigate('/forgot-password')} className="font-medium text-primary hover:underline">
               Quên mật khẩu?
             </button>
           </div>
@@ -94,7 +105,7 @@ const LoginPage: React.FC = () => {
 
           <div className="text-center text-sm text-slate-500 dark:text-slate-400">
             Chưa có tài khoản?{' '}
-            <button type="button" className="font-semibold text-primary hover:underline">
+            <button type="button" onClick={() => navigate('/')} className="font-semibold text-primary hover:underline">
               Đăng ký ngay
             </button>
           </div>
