@@ -95,7 +95,7 @@ const LandingPage = () => {
         <div className="flex flex-wrap justify-center items-center gap-12 opacity-60 grayscale hover:grayscale-0 transition-all">
           <img src="/img/google.png" alt="Google" className="h-10 md:h-12" />
           <img src="/img/microsoft.png" alt="Microsoft" className="h-10 md:h-12" />
-          <img src="/img/cisco.png" alt="Cisco" className="h-10 md:h-12" />
+          <img src="/img/cisco.png" alt="Cisco" className="h-13 md:h-16" />
           <img src="/img/samsung.png" alt="Samsung" className="h-10 md:h-12" />
           <img src="/img/apple.png" alt="Apple" className="h-10 md:h-12" />
           <img src="/img/toshiba.png" alt="Toshiba" className="h-10 md:h-12" />
@@ -208,7 +208,7 @@ const LandingPage = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-bold text-[#6366f1] uppercase block mb-1">Free</span>
+                    <span className="text-2xl font-extrabold text-slate-900">FREE</span>
                   </div>
                   <button className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-900 hover:bg-[#5e81ac] hover:text-white transition-colors">
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 22 22">
