@@ -52,10 +52,10 @@ const OptForgotPasswordPage: React.FC = () => {
       return;
     }
 
-    setMessage('Xác thực thành công! Bạn sẽ được chuyển đến đặt mật khẩu mới.');
+    setMessage('Xác thực thành công! Chuyển sang đặt mật khẩu mới...');
 
     setTimeout(() => {
-      navigate('/login');
+      navigate(`/reset-password?email=${encodeURIComponent(email)}`);
     }, 900);
   };
 
