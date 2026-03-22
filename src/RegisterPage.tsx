@@ -48,7 +48,7 @@ const RegisterPage: React.FC = () => {
         }
 
         if (!formValues.fullName.trim() || !formValues.email.trim() || !formValues.phone.trim() || !formValues.password.trim()) {
-            setStatus({ type: 'error', message: 'Please complete all fields before requesting an OTP.' });
+            setStatus({ type: 'error', message: 'Vui lòng điền đầy đủ thông tin trước khi yêu cầu mã OTP.' });
             return;
         }
 
@@ -74,21 +74,21 @@ const RegisterPage: React.FC = () => {
             });
             const data = await response.json();
             if (!response.ok) {
-                throw new Error(data.error || 'Unable to send OTP. Please try again later.');
+                throw new Error(data.error || 'Không thể gửi OTP. Vui lòng thử lại sau.');
             }
 
             setStatus({
                 type: 'success',
                 message: otpRequested
-                    ? data.message || 'A new OTP has been sent to your inbox.'
-                    : 'OTP sent! Please check your inbox and enter the code below.',
+                    ? data.message || 'OTP mới đã được gửi đến hộp thư của bạn.'
+                    : 'Đã gửi OTP! Vui lòng kiểm tra email và nhập mã phía dưới.',
             });
             setOtpCooldown(60);
             if (!otpRequested) {
                 setOtpRequested(true);
             }
         } catch (error: any) {
-            setStatus({ type: 'error', message: error.message || 'Unable to send OTP. Please try again later.' });
+            setStatus({ type: 'error', message: error.message || 'Không thể gửi OTP. Vui lòng thử lại sau.' });
         } finally {
             setIsRequestingOtp(false);
         }
@@ -98,11 +98,11 @@ const RegisterPage: React.FC = () => {
         event.preventDefault();
 
         if (!otpRequested) {
-            setStatus({ type: 'error', message: 'Please request an OTP before completing registration.' });
+            setStatus({ type: 'error', message: 'Vui lòng yêu cầu OTP trước khi hoàn tất đăng ký.' });
             return;
         }
         if (!formValues.otp.trim()) {
-            setStatus({ type: 'error', message: 'Please enter the OTP sent to your email.' });
+            setStatus({ type: 'error', message: 'Vui lòng nhập mã OTP đã được gửi tới email của bạn.' });
             return;
         }
 
@@ -121,15 +121,15 @@ const RegisterPage: React.FC = () => {
 
             const payload = await response.json();
             if (!response.ok) {
-                throw new Error(payload.error || 'OTP verification failed.');
+                throw new Error(payload.error || 'Xác thực OTP không thành công.');
             }
 
-            setStatus({ type: 'success', message: payload.message || 'Email verified! Your account is ready.' });
+            setStatus({ type: 'success', message: payload.message || 'Xác thực email thành công! Tài khoản của bạn đã sẵn sàng.' });
             setFormValues({ fullName: '', email: '', phone: '', password: '', role: 'student', otp: '' });
             setOtpRequested(false);
             setOtpCooldown(0);
         } catch (error: any) {
-            setStatus({ type: 'error', message: error.message || 'Could not verify OTP. Please try again.' });
+            setStatus({ type: 'error', message: error.message || 'Không thể xác thực OTP. Vui lòng thử lại.' });
         } finally {
             setIsSubmitting(false);
         }
@@ -148,7 +148,7 @@ const RegisterPage: React.FC = () => {
                 </div>
                 <a className="text-sm font-semibold text-slate-500 hover:text-primary transition-colors flex items-center gap-2" href="#">
                     <span className="material-symbols-outlined text-base">arrow_back</span>
-                    Back to site
+                    Quay lại trang chủ
                 </a>
             </header>
 
@@ -157,15 +157,15 @@ const RegisterPage: React.FC = () => {
                     <div className="relative rounded-[32px] border border-[#F1F5F9] bg-white shadow-[0_25px_80px_rgba(15,23,42,0.08)] px-6 py-8 lg:px-10 lg:py-10">
                         <div className="text-center mb-8">
                             <div className="flex justify-center gap-10 text-sm font-semibold text-slate-400">
-                                <button className="pb-2 border-b-2 border-transparent hover:text-primary transition-colors">Sign In</button>
-                                <button className="pb-2 border-b-2 border-primary text-primary">Create Account</button>
+                                <button className="pb-2 border-b-2 border-transparent hover:text-primary transition-colors">Đăng nhập</button>
+                                <button className="pb-2 border-b-2 border-primary text-primary">Tạo tài khoản</button>
                             </div>
-                            <h1 className="text-2xl lg:text-3xl font-extrabold mt-6 mb-2">Create your account</h1>
-                            <p className="text-sm text-slate-500">Join our community of learners and educators.</p>
+                            <h1 className="text-2xl lg:text-3xl font-extrabold mt-6 mb-2">Tạo tài khoản của bạn</h1>
+                            <p className="text-sm text-slate-500">Tham gia cộng đồng học viên và giảng viên của chúng tôi.</p>
                         </div>
 
                         <div className="mb-6">
-                            <p className="text-xs font-semibold text-slate-400 mb-3">I AM JOINING BECAUSE...</p>
+                            <p className="text-xs font-semibold text-slate-400 mb-3">TÔI THAM GIA VỚI VAI TRÒ...</p>
                             <div className="flex rounded-2xl border border-[#F1F5F9] bg-slate-50 p-1">
                                 <button
                                     className={`flex-1 px-4 py-2 text-sm font-semibold rounded-2xl transition-colors ${formValues.role === 'student'
@@ -176,7 +176,7 @@ const RegisterPage: React.FC = () => {
                                     onClick={() => handleRoleSelect('student')}
                                     disabled={otpRequested}
                                 >
-                                    I am a student
+                                    Tôi là học viên
                                 </button>
                                 <button
                                     className={`flex-1 px-4 py-2 text-sm font-semibold rounded-2xl transition-colors ${formValues.role === 'teacher'
@@ -187,34 +187,34 @@ const RegisterPage: React.FC = () => {
                                     onClick={() => handleRoleSelect('teacher')}
                                     disabled={otpRequested}
                                 >
-                                    I am a teacher
+                                    Tôi là giảng viên
                                 </button>
                             </div>
                         </div>
 
                         <form className="space-y-5" onSubmit={handleSubmit}>
                             <div>
-                                <label className="text-xs font-semibold text-slate-500 tracking-wide">FULL NAME</label>
-                                <input className={inputClass} placeholder="John Doe" type="text" value={formValues.fullName} onChange={handleChange('fullName')} required disabled={otpRequested} />
+                                <label className="text-xs font-semibold text-slate-500 tracking-wide">HỌ VÀ TÊN</label>
+                                <input className={inputClass} placeholder="Nguyễn Văn A" type="text" value={formValues.fullName} onChange={handleChange('fullName')} required disabled={otpRequested} />
                             </div>
                             <div>
-                                <label className="text-xs font-semibold text-slate-500 tracking-wide">EMAIL ADDRESS</label>
-                                <input className={inputClass} placeholder="name@email.com" type="email" value={formValues.email} onChange={handleChange('email')} required disabled={otpRequested} />
+                                <label className="text-xs font-semibold text-slate-500 tracking-wide">EMAIL</label>
+                                <input className={inputClass} placeholder="tenban@email.com" type="email" value={formValues.email} onChange={handleChange('email')} required disabled={otpRequested} />
                             </div>
                             <div>
-                                <label className="text-xs font-semibold text-slate-500 tracking-wide">PHONE NUMBER</label>
-                                <input className={inputClass} placeholder="+1 (555) 000-0000" type="tel" value={formValues.phone} onChange={handleChange('phone')} required disabled={otpRequested} />
+                                <label className="text-xs font-semibold text-slate-500 tracking-wide">SỐ ĐIỆN THOẠI</label>
+                                <input className={inputClass} placeholder="VD: 09xx xxx xxx" type="tel" value={formValues.phone} onChange={handleChange('phone')} required disabled={otpRequested} />
                             </div>
                             <div>
-                                <label className="text-xs font-semibold text-slate-500 tracking-wide">CREATE PASSWORD</label>
-                                <input className={inputClass} placeholder="Min. 8 characters" type="password" value={formValues.password} onChange={handleChange('password')} minLength={6} required disabled={otpRequested} />
+                                <label className="text-xs font-semibold text-slate-500 tracking-wide">MẬT KHẨU</label>
+                                <input className={inputClass} placeholder="Tối thiểu 8 ký tự" type="password" value={formValues.password} onChange={handleChange('password')} minLength={6} required disabled={otpRequested} />
                             </div>
                             <div>
-                                <label className="text-xs font-semibold text-slate-500 tracking-wide">EMAIL OTP</label>
+                                <label className="text-xs font-semibold text-slate-500 tracking-wide">MÃ OTP EMAIL</label>
                                 <div className="mt-2 flex items-center gap-3">
                                     <input
                                         className={`${inputClass} flex-1 mt-0`}
-                                        placeholder="6-digit code"
+                                        placeholder="Mã 6 chữ số"
                                         type="text"
                                         inputMode="numeric"
                                         pattern="[0-9]*"
@@ -228,12 +228,12 @@ const RegisterPage: React.FC = () => {
                                         disabled={isRequestingOtp || otpCooldown > 0}
                                     >
                                         {isRequestingOtp
-                                            ? 'Sending…'
+                                            ? 'Đang gửi…'
                                             : otpCooldown > 0
-                                                ? `Retry in ${otpCooldown}s`
+                                                ? `Thử lại sau ${otpCooldown}s`
                                                 : otpRequested
-                                                    ? 'Resend OTP'
-                                                    : 'Get OTP'}
+                                                    ? 'Gửi lại OTP'
+                                                    : 'Lấy OTP'}
                                     </button>
                                 </div>
                             </div>
@@ -256,17 +256,17 @@ const RegisterPage: React.FC = () => {
                                 type="submit"
                                 disabled={isSubmitting}
                             >
-                                {isSubmitting ? 'Creating account…' : otpRequested ? 'Complete Registration' : 'Create Account'}
+                                {isSubmitting ? 'Đang tạo tài khoản…' : otpRequested ? 'Hoàn tất đăng ký' : 'Tạo tài khoản'}
                             </button>
                             <p className="text-[11px] text-center text-slate-400">
-                                By signing up, you agree to our <a className="text-primary font-semibold" href="#">Terms</a> &amp; <a className="text-primary font-semibold" href="#">Privacy Policy</a>.
+                                Bằng việc đăng ký, bạn đồng ý với <a className="text-primary font-semibold" href="#">Điều khoản</a> và <a className="text-primary font-semibold" href="#">Chính sách bảo mật</a> của chúng tôi.
                             </p>
                         </form>
 
                         <div className="mt-8">
                             <div className="flex items-center gap-3 text-xs text-slate-400">
                                 <div className="h-px flex-1 bg-[#F1F5F9]" />
-                                OR CONTINUE WITH
+                                HOẶC TIẾP TỤC VỚI
                                 <div className="h-px flex-1 bg-[#F1F5F9]" />
                             </div>
                             <div className="mt-4 grid grid-cols-2 gap-3">
@@ -288,11 +288,11 @@ const RegisterPage: React.FC = () => {
 
                     <div className="text-center text-xs text-slate-400 mt-8 flex flex-col gap-2">
                         <div className="flex justify-center gap-6">
-                            <a className="hover:text-primary" href="#">Help Center</a>
-                            <a className="hover:text-primary" href="#">Privacy</a>
-                            <a className="hover:text-primary" href="#">Support</a>
+                            <a className="hover:text-primary" href="#">Trung tâm hỗ trợ</a>
+                            <a className="hover:text-primary" href="#">Chính sách bảo mật</a>
+                            <a className="hover:text-primary" href="#">Liên hệ hỗ trợ</a>
                         </div>
-                        <p>© 2024 EduFlow LMS. All rights reserved.</p>
+                        <p>© 2024 EduFlow LMS. Đã đăng ký bản quyền.</p>
                     </div>
                 </div>
             </main>
