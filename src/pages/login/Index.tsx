@@ -6,6 +6,7 @@ import {
     getStoredAccessToken,
     loginNormalAuth,
     storeAuthSession,
+    loginWithUIT,
 } from "../../services/auth";
 import LoginFormCard from "./components/LoginFormCard";
 import MobileFormScreen from "./components/MobileFormScreen";
@@ -59,25 +60,26 @@ export default function LoginPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const normalizedIdentifier = identifier.trim().toLowerCase();
+        const normalizedIdentifier = identifier.trim();
         const normalizedPassword = password.trim();
 
         setErrorMessage("");
 
         if (!normalizedIdentifier || !normalizedPassword) {
-            setErrorMessage("Vui lòng nhập đầy đủ email và mật khẩu.");
-            return;
-        }
-
-        if (!normalizedIdentifier.includes("@")) {
-            setErrorMessage("Người dùng thường vui lòng đăng nhập bằng email.");
+            setErrorMessage("Please enter your email or student ID and password.");
             return;
         }
 
         try {
             setIsSubmitting(true);
 
-            const result = await loginNormalAuth(normalizedIdentifier, normalizedPassword);
+            // handle UIT authentication first with checking identifier is not an email
+            if (normalizedIdentifier.includes('@')) {
+                var result = await loginNormalAuth(normalizedIdentifier, normalizedPassword);
+            }
+            else{
+                var result = await loginWithUIT(normalizedIdentifier, normalizedPassword);
+            }
             storeAuthSession(result);
             navigate("/", { replace: true });
         } catch (error) {

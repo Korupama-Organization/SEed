@@ -1,3 +1,5 @@
+import { encryptPassword } from 'uit-authenticator/browser';
+
 export interface AuthUser {
     _id?: string;
     fullName?: string;
@@ -23,6 +25,9 @@ interface ApiErrorShape {
 
 const API_BASE_URL =
     import.meta.env.VITE_API_BASE_URL?.toString().trim() || 'http://localhost:3000';
+
+const UIT_AUTH_SECRET =
+    import.meta.env.VITE_UIT_AUTH_SECRET?.toString().trim();
 
 const STORAGE_KEYS = {
     accessToken: 'accessToken',
@@ -65,6 +70,37 @@ export const loginNormalAuth = async (
     try {
         payload = (await response.json()) as LoginResponse | ApiErrorShape;
     } catch {
+        payload = null;
+    }
+
+    if (!response.ok) {
+        throw new Error(toErrorMessage('Dang nhap that bai.', payload as ApiErrorShape));
+    }
+
+    return payload as LoginResponse;
+};
+
+export const loginWithUIT = async (identifier: string, password: string): Promise<LoginResponse> => {
+    if (!UIT_AUTH_SECRET) {
+        throw new Error('UIT_AUTH_SECRET is not defined in environment variables.');
+    }
+    const encryptedPassword = await encryptPassword(password, UIT_AUTH_SECRET);
+    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            identifier,
+            password: encryptedPassword,
+        }),
+    });
+
+    let payload: LoginResponse | ApiErrorShape | null = null;
+    try {
+        payload = (await response.json()) as LoginResponse | ApiErrorShape;
+    }
+    catch {
         payload = null;
     }
 

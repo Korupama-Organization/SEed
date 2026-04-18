@@ -1,6 +1,6 @@
 interface CredentialInputProps {
     label: string;
-    type: 'text' | 'email' | 'password';
+    type: 'text' | 'password';
     value: string;
     onChange: (value: string) => void;
     placeholder: string;

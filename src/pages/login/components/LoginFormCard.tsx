@@ -44,14 +44,14 @@ export default function LoginFormCard({
                 className={`w-full flex flex-col gap-4 sm:gap-5 lg:gap-4 ${isMobileFormLayout ? 'mt-6' : ''}`}
             >
                 <CredentialInput
-                    label="Email"
-                    type="email"
+                    label="Email or Student ID"
+                    type="text"
                     value={identifier}
                     onChange={onIdentifierChange}
-                    placeholder="name@work-email.com"
+                    placeholder="Enter your email or student ID"
                     iconUrl={EMAIL_ICON_CDN}
-                    iconAlt="email icon"
-                    autoComplete="email"
+                    iconAlt="email or student ID icon"
+                    autoComplete="username"
                     autoCapitalize="none"
                 />
 
